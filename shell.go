@@ -11,6 +11,15 @@ import (
 	"syscall"
 )
 
+// ========= init ========
+func Init() error {
+	i := C.gInit()
+	if i == 0 {
+		return fmt.Errorf("init ui failed")
+	}
+	return nil
+}
+
 // ========= key const ======
 const (
 	KEY_BACK  = Key(C.gKEY_BACK)

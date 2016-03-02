@@ -11,9 +11,12 @@
 
 #define UNICODE
 #define _UNICODE
+#define GUID_LENGTH 38
 typedef wchar_t* gCHAR;
 // generate guid
 extern void newGUID(gCHAR str);
+extern int gInit();
+
 
 // ======== include API ==========
 // == win
@@ -150,12 +153,12 @@ typedef HDC gDC;			// paint device context
 
 
 // ======== define flags ========
-#define gFLAGS_NO_FRAME 1;
-#define gFLAGS_CHILD    2;
-#define gFLAGS_NO_TAB   4;
+// #define gFLAGS_NO_FRAME 1;
+// #define gFLAGS_CHILD    2;
+// #define gFLAGS_NO_TAB   4;
 
-// default windows flags
-#define gFLAGS_MODULE gFLAGS_NO_FRAME | gFLAGS_CHILD | gFLAGS_NO_TAB;
+// // default windows flags
+// #define gFLAGS_MODULE gFLAGS_NO_FRAME | gFLAGS_CHILD | gFLAGS_NO_TAB;
 
 // ======== event callback ========
 // size int width, int height
@@ -195,10 +198,6 @@ extern void gMouseMBDoubleEvent(gHANDLE, int, int);
 // wheel = -1 down
 // wheel = 1 up
 extern void gMouseMBWheelEvent(gHANDLE, int, int, int);
-
-
-
-
 
 //===============================
 // extern functions

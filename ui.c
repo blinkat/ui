@@ -2,8 +2,6 @@
 #include "stdlib.h"
 #include "time.h"
 
-const int GUID_LENGTH = 38;
-
 void newGUID(gCHAR str)
 {
 	srand(time(NULL));
@@ -15,4 +13,9 @@ void newGUID(gCHAR str)
 	         rand() & 0xffff, rand() & 0xffff, rand() & 0xffff
 	        );
 	str[GUID_LENGTH] = '\0';
+}
+
+int gInit()
+{
+	return 1;
 }

@@ -79,29 +79,6 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
-DOWRD SetFlags(int flags)
-{
-	DOWRD ret;
-	if (flags == 0) return WS_OVERLAPPEDWINDOW;
-	ret = WS_VISIBLE;
-
-	if ((flags & gFLAGS_NO_FRAME) != gFLAGS_NO_FRAME)
-	{
-		ret |= WS_BORDER | WS_CAPTION;
-	}
-
-	if ((flags & gFLAGS_CHILD) == gFLAGS_CHILD)
-	{
-		ret |= WS_CHILD;
-	}
-	if ((flags & gFLAGS_NO_TAB) == gFLAGS_NO_TAB)
-	{
-		ret |= WS_TABSTOP;
-	}
-
-	return ret;
-}
-
 // ===============================================================
 
 /**
@@ -114,6 +91,7 @@ gHANDLE gCreateWindow(int width, int height, gCHAR title, int flags, gHANDLE par
 	HWND hwnd;
 	HINSTANCE hin;
 	WNDCLASS cls;
+	UINT styles;
 
 	guid = (gCHAR)malloc(GUID_LENGTH * sizeof(wchar_t));
 	newGUID(guid);
@@ -129,15 +107,13 @@ gHANDLE gCreateWindow(int width, int height, gCHAR title, int flags, gHANDLE par
 	cls.hIcon         = LoadIcon( NULL, IDI_APPLICATION );               //窗口最小化图标:使用缺省图标
 	cls.hCursor       = LoadCursor( NULL, IDC_ARROW );                 //窗口采用箭头光标
 
-	if (!RegisterClass(&cls))
-	{
-		return NULL;
-	}
+	styles = WS_VISIBLE;
+	if (parent != NULL) styles |= WS_CHILD;
 
 	hwnd = CreateWindow(
 	           (LPCTSTR)guid,                 //窗口类名
 	           (LPCTSTR)title,             //窗口标题
-	           SetFlags(flags),       //窗口的风格
+	           styles,       //窗口的风格
 	           0,             			//窗口初始显示位置x:使用缺省值
 	           0,             			//窗口初始显示位置y:使用缺省值
 	           width,             //窗口的宽度:使用缺省值
