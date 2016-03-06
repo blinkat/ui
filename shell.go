@@ -9,6 +9,7 @@ import "C"
 import (
 	"fmt"
 	"syscall"
+	"unsafe"
 )
 
 // ========= init ========
@@ -248,9 +249,21 @@ func gMouseMBWheelEvent(h Handle, x C.int, y C.int, wheel C.int) {
 	fmt.Println(wheel)
 }
 
+// ********************************************************
+
+func csetDefaultIcon(buf []byte) {
+	p := unsafe.Pointer(&buf[0])
+	C.gSetDefaultIcon(p)
+	// C.free(p)
+	// fmt.Println(C.GetLastError())
+}
+
 func Test() {
+	csetDefaultIcon(_DEFAULT_ICON)
+
 	h, err := ccreateWindow(1024, 768, "test", 0, nil)
 	if err != nil {
+		fmt.Println(C.GetLastError())
 		panic(err)
 	}
 

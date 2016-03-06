@@ -16,6 +16,9 @@ typedef wchar_t* gCHAR;
 // generate guid
 extern void newGUID(gCHAR str);
 extern int gInit();
+extern void gSetDefaultIcon(void* buf);
+
+struct WinStyle;
 
 
 // ======== include API ==========
@@ -27,6 +30,7 @@ extern int gInit();
 // define type for window
 typedef HWND gHANDLE;
 typedef HDC gDC;			// paint device context
+typedef HICON gIcon;
 
 // define key code
 #define gKEY_BACK 		VK_BACK
@@ -211,5 +215,27 @@ extern void gMouseMBWheelEvent(gHANDLE, int, int, int);
  */
 extern gHANDLE gCreateWindow(int, int, gCHAR, int, gHANDLE);
 extern void gShowWindow(gHANDLE h);
+extern gIcon gLoadIcon(void*, int, int);
+
+extern gIcon _DEFAULT_ICON;
+// ============= create windows structure ============
+struct WinStyle {
+	int x, y;
+	int width, height;
+	gCHAR icon;
+	gCHAR title;
+	gHANDLE parent;
+	int style;
+};
+
+#define gWS_DEFAULT 0
+#define gWS_NO_BORDER 1
+#define gWS_CHILD 2
+
+/**
+ * generate default window structure
+ * @result
+ */
+// extern void GenDefaultWinStyle(WinStyle *s);
 
 #endif

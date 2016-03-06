@@ -90,44 +90,56 @@ gHANDLE gCreateWindow(int width, int height, gCHAR title, int flags, gHANDLE par
 	gHANDLE ret;
 	HWND hwnd;
 	HINSTANCE hin;
-	WNDCLASS cls;
+	WNDCLASSEX cls;
 	UINT styles;
+	gIcon icon;
+
+	// icon = LoadImage(NULL, L"default.ico", IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+	// if (icon == NULL)
+	// {
+	// 	MessageBox(NULL, L"err", L"", MB_OK);
+	// }
 
 	guid = (gCHAR)malloc(GUID_LENGTH * sizeof(wchar_t));
 	newGUID(guid);
 	hin = GetModuleHandle(NULL);
-	cls.style         = CS_HREDRAW | CS_VREDRAW;                         //窗口样式
-	cls.lpszClassName = (LPCTSTR)guid;                               //窗口类名
-	cls.lpszMenuName  = NULL;                                     //窗口菜单:无
-	cls.hbrBackground = (HBRUSH) GetStockObject(WHITE_BRUSH);    //窗口背景颜色
-	cls.lpfnWndProc   = WinProc;                                   //窗口处理函数
-	cls.cbWndExtra    = 0;                                          //窗口实例扩展:无
-	cls.cbClsExtra    = 0;                                          //窗口类扩展:无
-	cls.hInstance     = hin;                                   //窗口实例句柄
-	cls.hIcon         = LoadIcon( NULL, IDI_APPLICATION );               //窗口最小化图标:使用缺省图标
-	cls.hCursor       = LoadCursor( NULL, IDC_ARROW );                 //窗口采用箭头光标
 
-	styles = WS_VISIBLE;
-	if (parent != NULL) styles |= WS_CHILD;
+	cls.cbSize = sizeof(WNDCLASSEX);
+	cls.style = CS_HREDRAW | CS_VREDRAW;
+	cls.lpfnWndProc = (WNDPROC)WinProc;
+	cls.cbClsExtra = 0;
+	cls.cbWndExtra = 0;
+	cls.hInstance = hin;
+	cls.hIcon = _DEFAULT_ICON;
+	cls.hCursor = LoadCursor(NULL, IDC_ARROW);
+	cls.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	cls.lpszMenuName = NULL;
+	cls.lpszClassName = (LPCTSTR)guid;
+	cls.hIconSm = _DEFAULT_ICON;
 
-	hwnd = CreateWindow(
-	           (LPCTSTR)guid,                 //窗口类名
-	           (LPCTSTR)title,             //窗口标题
-	           styles,       //窗口的风格
-	           0,             			//窗口初始显示位置x:使用缺省值
-	           0,             			//窗口初始显示位置y:使用缺省值
-	           width,             //窗口的宽度:使用缺省值
-	           height,             //窗口的高度:使用缺省值
-	           parent,                    //父窗口:无
-	           NULL,                      //子菜单:无
-	           hin,                 //该窗口应用程序的实例句柄
-	           NULL                       //
+	if (!RegisterClassEx(&cls))
+	{
+		MessageBox(NULL, L"", L"", MB_OK);
+		return NULL;
+	}
+
+	hwnd = CreateWindowEx(
+	           WS_EX_CLIENTEDGE | WS_EX_CONTROLPARENT,	// ex style
+	           (LPCTSTR)guid,
+	           (LPCTSTR)title,
+	           WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_POPUP,
+	           0,
+	           0,
+	           width,
+	           height,
+	           parent,
+	           NULL,
+	           hin,
+	           0
 	       );
 
-	ret = hwnd;
-
 	free(guid);
-	return ret;
+	return hwnd;
 }
 
 void gShowWindow(gHANDLE h)
@@ -142,5 +154,27 @@ void gShowWindow(gHANDLE h)
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
+}
+
+gIcon gLoadIcon(void* buffer, int width, int height)
+{
+	HBITMAP bit;
+	gIcon icon;
+	HANDLE img;
+
+	bit = CreateBitmap(width, height, 1, 8, buffer);
+	if (bit == NULL)
+	{
+		return NULL;
+	}
+
+	img = CopyImage(bit, IMAGE_ICON, 32, 32, LR_COPYDELETEORG | LR_COPYRETURNORG);
+	if (img == NULL)
+	{
+		MessageBox(NULL, L"err", L"", MB_OK);
+		return NULL;
+	}
+
+	return (gIcon)img;
 }
 #endif

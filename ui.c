@@ -2,6 +2,7 @@
 #include "stdlib.h"
 #include "time.h"
 
+gIcon _DEFAULT_ICON = NULL;
 void newGUID(gCHAR str)
 {
 	srand(time(NULL));
@@ -18,4 +19,22 @@ void newGUID(gCHAR str)
 int gInit()
 {
 	return 1;
+}
+
+// void GenDefaultWinStyle(WinStyle *s)
+// {
+// 	if (s == NULL) s = malloc(sizeof(WinStyle));
+// 	s.x = 0;
+// 	s.y = 0;
+// 	s.width = 1024;
+// 	s.height = 768;
+// 	s.icon = _DEFAULT_ICON;
+// 	s.title = "unknow window";
+// 	s.parent = NULL;
+// 	s.style = gWS_DEFAULT;
+// }
+
+void gSetDefaultIcon(void* buf)
+{
+	_DEFAULT_ICON = gLoadIcon(buf, 128, 128);
 }
