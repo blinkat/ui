@@ -16,9 +16,15 @@ typedef wchar_t* gCHAR;
 // generate guid
 extern void newGUID(gCHAR str);
 extern int gInit();
-extern void gSetDefaultIcon(void* buf);
 
-struct WinStyle;
+struct gPoint {
+	int x, y;
+};
+
+struct Rectangle
+{
+	int x, y, width, height;
+};
 
 
 // ======== include API ==========
@@ -155,15 +161,6 @@ typedef HICON gIcon;
 #endif
 //== end win
 
-
-// ======== define flags ========
-// #define gFLAGS_NO_FRAME 1;
-// #define gFLAGS_CHILD    2;
-// #define gFLAGS_NO_TAB   4;
-
-// // default windows flags
-// #define gFLAGS_MODULE gFLAGS_NO_FRAME | gFLAGS_CHILD | gFLAGS_NO_TAB;
-
 // ======== event callback ========
 // size int width, int height
 extern void gSizeEvent(gHANDLE, int, int);	//size change
@@ -213,29 +210,40 @@ extern void gMouseMBWheelEvent(gHANDLE, int, int, int);
  * @param parent
  * @return
  */
-extern gHANDLE gCreateWindow(int, int, gCHAR, int, gHANDLE);
+extern gHANDLE gCreateWindow(int, int, gCHAR, int, int, gIcon, gHANDLE);
 extern void gShowWindow(gHANDLE h);
-extern gIcon gLoadIcon(void*, int, int);
-
-extern gIcon _DEFAULT_ICON;
-// ============= create windows structure ============
-struct WinStyle {
-	int x, y;
-	int width, height;
-	gCHAR icon;
-	gCHAR title;
-	gHANDLE parent;
-	int style;
-};
 
 #define gWS_DEFAULT 0
 #define gWS_NO_BORDER 1
 #define gWS_CHILD 2
 
-/**
- * generate default window structure
- * @result
- */
-// extern void GenDefaultWinStyle(WinStyle *s);
+// =========== device context method ==========
+extern void gAbortPath(gDC);
+extern void gBeginPath(gDC);
+extern void gEndPath(gDC);
 
+// x, y, radius, start angle, end angle
+extern void gArc(gDC, gPoint, int, float, float);
+
+// draw path
+// start point
+// start control point
+// end control point
+// end point
+extern void gBezier(gDC, gPoint, gPoint, gPoint, gPoint);
+// rect path
+// start point
+// width
+// height
+extern void gRect(gDC, gPoint, int, int);
+extern void gRectPath(gDC, Rectangle);
+
+extern void RoundRect(gDC, gPoint, int, int);
+extern void RoundRectPath(gDC, Rectangle);
+
+// draw
+extern void Fill(gDC);
+extern void Stroke(gDC);
+
+extern void DrawImage(gDC, gPoint, int, int);
 #endif

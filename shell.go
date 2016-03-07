@@ -256,6 +256,12 @@ func csetDefaultIcon(buf []byte) {
 	C.gSetDefaultIcon(p)
 	// C.free(p)
 	// fmt.Println(C.GetLastError())
+	//CacheImage("default", buf)
+}
+
+// cache the image
+func CacheImage(id string, buf []byte) {
+
 }
 
 func Test() {
