@@ -15,13 +15,3 @@ void newGUID(gCHAR str)
 	        );
 	str[GUID_LENGTH] = '\0';
 }
-
-int gInit()
-{
-	return 1;
-}
-
-void gSetDefaultIcon(void* buf)
-{
-	_DEFAULT_ICON = gLoadIcon(buf, 128, 128);
-}

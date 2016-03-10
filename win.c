@@ -7,11 +7,14 @@
 #include <windowsx.h>
 #include <shellapi.h>
 #include <stdlib.h>
+#include <wingdi.h>
 
 #ifdef _WIN32
 
+#define WND_NAME TEXT("golang window")
+
 // convert png jpg bmp to ico
-gIcon converToIco(void* buffer, int width, height)
+gIcon converToIco(void* buffer, int width, int height)
 {
 	HDC dc;
 	HBITMAP bit, mask;
@@ -68,11 +71,40 @@ gIcon converToIco(void* buffer, int width, height)
 	return icon;
 }
 
-LRESULT CALLBACK WinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+void callPaint(HWND hwnd)
 {
 	PAINTSTRUCT ps;
-	HDC hdc;
+	HDC hdc, mdc;
+	RECT rect;
+	HBITMAP bit;
+	HGDIOBJ gdi;
+	int width, height;
+
+	hdc = BeginPaint(hwnd, &ps);
+	mdc = CreateCompatibleDC(hdc);
+	GetWindowRect(hwnd, &rect);
+	width = rect.right - rect.left;
+	height = rect.bottom - rect.top;
+	bit = CreateCompatibleBitmap(hdc, width, height);
+	gdi = SelectObject(mdc, bit);
+
+	gPaintEvent(hwnd, mdc);
+
+	BitBlt(hdc, 0, 0, width, height, mdc, 0, 0, SRCCOPY);
+	SelectObject(hdc, gdi);
+	DeleteDC(mdc);
+	DeleteObject(bit);
+	EndPaint(hwnd, &ps);
+}
+
+LRESULT CALLBACK WinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
 	switch (message) {
+	case WM_SHOWWINDOW:
+		gShowEvent(hwnd);
+	case WM_CREATE:
+		gCreatedEvent(hwnd);
+		return 0;
 	// mouse
 	case WM_MOUSEWHEEL:
 		gMouseMBWheelEvent(hwnd, (int)(LOWORD(lParam)), (int)(HIWORD(lParam)), ((int)wParam) < 0 ? -1 : 1);
@@ -118,9 +150,7 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		gCloseEvent(hwnd);
 		return 0;
 	case WM_PAINT:
-		hdc = BeginPaint(hwnd, &ps);
-		gPaintEvent(hwnd, hdc);
-		EndPaint(hwnd, &ps);
+		callPaint(hwnd);
 		return 0;
 	case WM_SETFOCUS:
 		gFocusEvent(hwnd);
@@ -144,49 +174,71 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 // ===============================================================
 
-/**
- * create window func
- */
-gHANDLE gCreateWindow(int width, int height, gCHAR title, int px, int py, gIcon icon, gHANDLE parent)
+// ************ init *************
+
+int gInit()
 {
-	wchar_t* guid;
-	gHANDLE ret;
-	HWND hwnd;
 	HINSTANCE hin;
 	WNDCLASSEX cls;
-	UINT styles;
-	gIcon icon;
 
-	guid = (gCHAR)malloc(GUID_LENGTH * sizeof(wchar_t));
-	newGUID(guid);
 	hin = GetModuleHandle(NULL);
-
 	cls.cbSize = sizeof(WNDCLASSEX);
 	cls.style = CS_HREDRAW | CS_VREDRAW;
 	cls.lpfnWndProc = (WNDPROC)WinProc;
 	cls.cbClsExtra = 0;
 	cls.cbWndExtra = 0;
 	cls.hInstance = hin;
-	cls.hIcon = _DEFAULT_ICON;
+	cls.hIcon = NULL;
 	cls.hCursor = LoadCursor(NULL, IDC_ARROW);
-	cls.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	cls.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 	cls.lpszMenuName = NULL;
-	cls.lpszClassName = (LPCTSTR)guid;
-	cls.hIconSm = _DEFAULT_ICON;
+	cls.lpszClassName = WND_NAME;
+	cls.hIconSm = NULL;
 
 	if (!RegisterClassEx(&cls))
 	{
-		MessageBox(NULL, L"", L"", MB_OK);
-		return NULL;
+		return 0;
 	}
 
+	return 1;
+}
+
+/**
+ * create window func
+ */
+gHANDLE gCreateWindow(int width, int height, gCHAR title, int px, int py, int style, gHANDLE parent)
+{
+	gHANDLE ret;
+	HWND hwnd;
+	HINSTANCE hin;
+	UINT st = 0;
+	UINT exst = WS_EX_LAYERED;
+
+	if (style == gWS_MODULE) exst |= WS_EX_TOOLWINDOW;
+
+	// gen st
+	switch (style) {
+	case gWS_DEFAULT: st = WS_OVERLAPPEDWINDOW;
+		break;
+	case gWS_CUSTOM:
+		st = WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_POPUP;
+		break;
+	case gWS_MODULE:
+		st = WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_POPUP;
+		break;
+	default:
+		return NULL;
+	};
+
+	hin = GetModuleHandle(NULL);
 	hwnd = CreateWindowEx(
-	           WS_EX_CLIENTEDGE | WS_EX_CONTROLPARENT,	// ex style
-	           (LPCTSTR)guid,
+	           //WS_EX_CLIENTEDGE | WS_EX_CONTROLPARENT,	// ex style
+	           exst,
+	           WND_NAME,
 	           (LPCTSTR)title,
-	           WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_POPUP,
-	           0,
-	           0,
+	           st,
+	           px,
+	           py,
 	           width,
 	           height,
 	           parent,
@@ -195,7 +247,13 @@ gHANDLE gCreateWindow(int width, int height, gCHAR title, int px, int py, gIcon 
 	           0
 	       );
 
-	free(guid);
+	if (hwnd == NULL) return NULL;
+
+	if (style != gWS_DEFAULT)
+	{
+		SetLayeredWindowAttributes(hwnd, RGB(255, 255, 255), 255, LWA_ALPHA | LWA_COLORKEY);
+	}
+
 	return hwnd;
 }
 
@@ -213,61 +271,171 @@ void gShowWindow(gHANDLE h)
 	}
 }
 
+void gDestroyWindow(gHANDLE h)
+{
+	DestroyWindow(h);
+}
+
+void gGetSize(gHANDLE h, int* width, int* height)
+{
+	RECT r;
+
+	if (!GetWindowRect(h, &r)) {
+		*width = 0;
+		*height = 0;
+	} else {
+		*width = r.right - r.left;
+		*height = r.bottom - r.top;
+	}
+}
+
+void gSetOpacity(gHANDLE hwnd, gBYTE opa)
+{
+	SetLayeredWindowAttributes(hwnd, RGB(255, 255, 255), opa, LWA_ALPHA | LWA_COLORKEY);
+}
+
+gBYTE gGetOpacity(gHANDLE hwnd)
+{
+	gBYTE op;
+	COLORREF pcr;
+	DWORD flags;
+	GetLayeredWindowAttributes(hwnd, &pcr, &op, &flags);
+	return op;
+}
+
+gIcon gLoadIcon(void* buffer, int width, int height)
+{
+	return converToIco(buffer, width, height);
+}
+
+void gDestoryIcon(gIcon ico)
+{
+	DeleteObject(ico);
+}
+
+int gSetIcon(gHANDLE hwnd, gIcon ico)
+{
+	SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)ico);
+	SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)ico);
+}
+
+void gGetLocation(gHANDLE hwnd, int* x, int* y)
+{
+	RECT r;
+	if (!GetWindowRect(hwnd, &r))
+	{
+		*x = (int)r.left;
+		*y = (int)r.top;
+	} else {
+		*x = 0;
+		*y = 0;
+	}
+}
+
+void gSetLocation(gHANDLE hwnd, int x, int y)
+{
+	SetWindowPos(hwnd, NULL, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+}
+
+void gSetSize(gHANDLE hwnd, int width, int height)
+{
+	SetWindowPos(hwnd, NULL, 0, 0, width, height, SWP_NOZORDER | SWP_NOMOVE);
+}
+
+void gMoveTop(gHANDLE hwnd)
+{
+	SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+}
+
+void gMoveBottom(gHANDLE hwnd)
+{
+	SetWindowPos(hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+}
+
+// *************** brush *******************
+void gDestoryBrush(gBrush h)
+{
+	DeleteObject(h);
+}
+
+gBrush gCreateSolidBrush(gBYTE r, gBYTE g, gBYTE b)
+{
+	HBRUSH h;
+	h = CreateSolidBrush(RGB(r, g, b));
+	return (gBrush)h;
+}
+
+// ***************** pen ********************
+void gDestoryPen(gPen h)
+{
+	DeleteObject(h);
+}
+
+gPen gCreatePen(int style, gBYTE r, gBYTE g, gBYTE b, int width)
+{
+	(gPen)CreatePen(style, width, RGB(r, g, b));
+}
+
 // ========== dc ==========
-void gAbortPath(gDC dc)
+void gFillRect(gDC dc, int left, int top, int right, int bottom, gBrush brush)
 {
-	AbortPath(dc);
-}
-void gBeginPath(gDC dc)
-{
-	BeginPath(dc);
-}
-void gEndPath(gDC)
-{
-	EndPath(dc);
+	RECT r = {
+		.left = left,
+		.top = top,
+		.right = right,
+		.bottom = bottom
+	};
+
+	FillRect(dc, &r, brush);
 }
 
-// x, y, radius, start angle, end angle
-void gArc(gDC dc, gPoint p, int r, float start, float end)
+void gClearBackground(gHANDLE hwnd, gDC dc)
 {
-	AngleArc(p.x, p.y, r, start, end);
+	RECT r, dr;
+	HBITMAP bit, old;
+	HDC mdc;
+	int width, height;
+	HBRUSH brush;
+	BLENDFUNCTION bf;
+
+	GetWindowRect(hwnd, &r);
+	width = r.right - r.left;
+	height = r.bottom - r.top;
+
+	mdc = CreateCompatibleDC(dc);
+	bit = CreateCompatibleBitmap(dc, width, height);
+	old = SelectObject(mdc, bit);
+
+	brush = CreateSolidBrush(RGB(0, 0, 0));
+	dr.left = 0;
+	dr.top = 0;
+	dr.right = width;
+	dr.bottom = height;
+
+	FillRect(mdc, &dr, brush);
+
+	memset(&bf, 0, sizeof(bf));
+	bf.SourceConstantAlpha = 0x3f;
+	bf.BlendOp = AC_SRC_OVER;
+
+	AlphaBlend(dc, 0, 0, width, height, mdc, 0, 0, width, height, bf);
+	SelectObject(mdc, old);
+
 }
 
-void gBezier(gDC dc, gPoint s, gPoint cs, gPoint ce, gPoint e)
+void gStrokeRect(gDC dc, int left, int top, int right, int bottom, gPen pen)
 {
-	POINT a[4] = {s.x, s.y, cs.x, cs.y, ce.x, ce.y, e.x, e.y};
-	PolyBezier(dc, a, 4);
-}
-// rect path
-//
-void gRect(gDC dc, gPoint p, int w, int h)
-{
-	POINT a[3] = {p.x, p.y, p.x + w, p.y, p.x + w, p.y + h };
-	Polygon(dc, a, 3);
-}
-
-void gRectPath(gDC dc, Rectangle r)
-{
-	POINT a[3] = {r.x, r.y, r.x + r.width, r.y, r.x + r.width, r.y + r.height};
-	Polygon(dc, a, 3);
-}
-
-void Fill(gDC dc)
-{
-	FillPath(dc);
-}
-
-void Stroke(gDC dc)
-{
+	MoveToEx(dc, left, top, NULL);
+	LineTo(dc, right, top);
+	LineTo(dc, right, bottom);
+	LineTo(dc, left, bottom);
+	LineTo(dc, left, top);
+	SelectObject(dc, pen);
 	StrokePath(dc);
 }
 
-void RoundRect(gDC dc, gPoint p, int width, int height, int radius)
+void gRePaint(gHANDLE h)
 {
-	RoundRect(dc, p.x, p.y, p.x + w, p.y + h, radius, radius);
-}
-void RoundRectPath(gDC dc, Rectangle r)
-{
-	RoundRect(dc, r.x, r.y, r.x + r.width, r.y + r.height, radius, radius);
+	PostMessage(h,WM_PAINT,0,0);
 }
 #endif

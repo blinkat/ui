@@ -1,7 +1,8 @@
 package ui
 
 /*
-#cgo LDFLAGS: -mwindows
+// windows option
+#cgo windows LDFLAGS: -lopengl32 -lgdi32 -lMsimg32
 #include "inc/ui.h"
 */
 import "C"
@@ -138,17 +139,26 @@ const (
 	KEY_NUM_DOT          = Key(C.gKEY_NUM_DOT)
 )
 
+const (
+	STYLE_DEFAULT = C.gWS_DEFAULT
+	STYLE_CUSTOM  = C.gWS_CUSTOM
+	STYLE_MODULE  = C.gWS_MODULE
+)
+
 // ========= type ========
 // windows handle
 type Handle C.gHANDLE
 type DC C.gDC
+type Char C.gCHAR
+type BrushHandle C.gBrush
+type Icon C.gIcon
+type PenHandle C.gPen
 
 // ========= function =======
-func ccreateWindow(width, height int, title string, flags int, parent Handle) (Handle, error) {
+func ccreateWindow(width, height int, title string, px, py, style int, parent Handle) (Handle, error) {
 	ct := syscall.StringToUTF16Ptr(title)
-	// defer C.free(unsafe.Pointer(ct))
 
-	ret := C.gCreateWindow(C.int(width), C.int(height), (*C.wchar_t)(ct), C.int(flags), parent)
+	ret := C.gCreateWindow(C.int(width), C.int(height), (*C.wchar_t)(ct), C.int(px), C.int(py), C.int(style), parent)
 	if ret == nil {
 		return nil, fmt.Errorf("Create window failed.")
 	}
@@ -157,6 +167,87 @@ func ccreateWindow(width, height int, title string, flags int, parent Handle) (H
 
 func cshowWindow(h Handle) {
 	C.gShowWindow(h)
+}
+
+func cdestroyWindow(h Handle) {
+	C.gDestroyWindow(h)
+}
+
+func cGetSize(h Handle) (int, int) {
+	width := C.int(0)
+	height := C.int(0)
+
+	C.gGetSize(h, &width, &height)
+	return int(width), int(height)
+}
+
+func cSetSize(han Handle, w, h int) {
+	C.gSetSize(han, C.int(w), C.int(h))
+}
+
+func cSetOpacity(h Handle, a uint8) {
+	C.gSetOpacity(h, C.gBYTE(a))
+}
+
+func cGetOpacity(h Handle) uint8 {
+	return uint8(C.gGetOpacity(h))
+}
+
+func cMoveBottom(h Handle) {
+	C.gMoveBottom(h)
+}
+
+func cMoveTop(h Handle) {
+	C.gMoveTop(h)
+}
+
+func cGetLocation(h Handle) (int, int) {
+	var x, y C.int
+	C.gGetLocation(h, &x, &y)
+	return int(x), int(y)
+}
+func cSetLocation(h Handle, x, y int) {
+	C.gSetLocation(h, C.int(x), C.int(y))
+}
+
+func cCreateSolidBrush(r, g, b uint8) BrushHandle {
+	ret := C.gCreateSolidBrush(C.gBYTE(r), C.gBYTE(g), C.gBYTE(b))
+	return BrushHandle(ret)
+}
+
+func cDestoryBrush(h BrushHandle) {
+	C.gDestoryBrush(h)
+}
+
+func cSetIcon(h Handle, rgba *Image) {
+	C.gSetIcon(h, rgba.Icon)
+}
+
+func cLoadIcon(pix []uint8, width, height int) Icon {
+	p := unsafe.Pointer(&pix[0])
+	return Icon(C.gLoadIcon(p, C.int(width), C.int(height)))
+}
+func cDestoryIcon(ico Icon) {
+	C.gDestoryIcon(ico)
+}
+
+func cRePaint(h Handle) {
+	C.gRePaint(h)
+}
+
+// *************************
+// device context
+// *************************
+func cFillRect(dc DC, left, top, right, bottom int, b BrushHandle) {
+	C.gFillRect(dc, C.int(left), C.int(top), C.int(right), C.int(bottom), b)
+}
+
+func cClearBackground(hwnd Handle, dc DC) {
+	C.gClearBackground(hwnd, dc)
+}
+
+func cStrokeRect(dc DC, left, top, right, bottom int, pen PenHandle) {
+	C.gStrokeRect(dc, C.int(left), C.int(top), C.int(right), C.int(bottom), pen)
 }
 
 // ======= event shell ======
@@ -184,10 +275,12 @@ func gFocusOutEvent(h Handle) {
 
 //export gPaintEvent
 func gPaintEvent(h Handle, dc DC) {
+	callModuleEvent(h, _EVENT_PAINT, newDeviceContext(dc))
 }
 
 //export gCloseEvent
 func gCloseEvent(h Handle) {
+	callModuleEvent(h, _EVENT_CLOSE)
 }
 
 //export gKeyDownEvent
@@ -201,7 +294,7 @@ func gKeyUpEvent(h Handle, k C.int) {
 
 //export gMouseLBDownEvent
 func gMouseLBDownEvent(h Handle, x C.int, y C.int) {
-	fmt.Println(x, y)
+
 }
 
 //export gMouseLBUpEvent
@@ -246,32 +339,30 @@ func gMouseMBDoubleEvent(h Handle, x C.int, y C.int) {
 
 //export gMouseMBWheelEvent
 func gMouseMBWheelEvent(h Handle, x C.int, y C.int, wheel C.int) {
-	fmt.Println(wheel)
-}
-
-// ********************************************************
-
-func csetDefaultIcon(buf []byte) {
-	p := unsafe.Pointer(&buf[0])
-	C.gSetDefaultIcon(p)
-	// C.free(p)
-	// fmt.Println(C.GetLastError())
-	//CacheImage("default", buf)
-}
-
-// cache the image
-func CacheImage(id string, buf []byte) {
 
 }
 
-func Test() {
-	csetDefaultIcon(_DEFAULT_ICON)
-
-	h, err := ccreateWindow(1024, 768, "test", 0, nil)
-	if err != nil {
-		fmt.Println(C.GetLastError())
-		panic(err)
-	}
-
-	cshowWindow(h)
+//export gCreatedEvent
+func gCreatedEvent(h Handle) {
+	callModuleEvent(h, _EVENT_CREATED)
 }
+
+//export gShowEvent
+func gShowEvent(h Handle) {
+	callModuleEvent(h, _EVENT_SHOW)
+}
+
+// ****************** pen ********************************
+func cCreatePen(r, g, b uint8, style int, width int) PenHandle {
+	return PenHandle(C.gCreatePen(C.int(style), C.gBYTE(r), C.gBYTE(g), C.gBYTE(b), C.int(width)))
+}
+
+func cDestoryPen(h PenHandle) {
+	C.gDestoryPen(h)
+}
+
+const (
+	PEN_SOLID = C.gPEN_SOLID
+	PEN_DASH  = C.gPEN_DASH
+	PEN_DOT   = C.gPEN_DOT
+)

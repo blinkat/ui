@@ -13,6 +13,7 @@
 #define _UNICODE
 #define GUID_LENGTH 38
 typedef wchar_t* gCHAR;
+typedef unsigned char gBYTE;
 // generate guid
 extern void newGUID(gCHAR str);
 extern int gInit();
@@ -21,10 +22,16 @@ struct gPoint {
 	int x, y;
 };
 
-struct Rectangle
+struct gRectangle
 {
 	int x, y, width, height;
 };
+
+typedef struct _gImage
+{
+	void* buffer;
+	int width, height;
+}gImage, *pGImage;
 
 
 // ======== include API ==========
@@ -37,6 +44,8 @@ struct Rectangle
 typedef HWND gHANDLE;
 typedef HDC gDC;			// paint device context
 typedef HICON gIcon;
+typedef HBRUSH gBrush;
+typedef HPEN gPen;
 
 // define key code
 #define gKEY_BACK 		VK_BACK
@@ -199,6 +208,8 @@ extern void gMouseMBDoubleEvent(gHANDLE, int, int);
 // wheel = -1 down
 // wheel = 1 up
 extern void gMouseMBWheelEvent(gHANDLE, int, int, int);
+extern void gCreatedEvent(gHANDLE);
+extern void gShowEvent(gHANDLE);
 
 //===============================
 // extern functions
@@ -206,44 +217,52 @@ extern void gMouseMBWheelEvent(gHANDLE, int, int, int);
  * @param width
  * @param height
  * @param title
- * @param flags
+ * @param px
+ * @param py
+ * @param icon
+ * @param style
  * @param parent
  * @return
  */
-extern gHANDLE gCreateWindow(int, int, gCHAR, int, int, gIcon, gHANDLE);
+extern gHANDLE gCreateWindow(int, int, gCHAR, int, int, int, gHANDLE);
 extern void gShowWindow(gHANDLE h);
+extern void gSetWindowIcon(gIcon);
+extern void gDestroyWindow(gHANDLE);
+extern void gGetSize(gHANDLE, int*, int*);
+extern void gSetSize(gHANDLE, int, int);
+extern void gSetOpacity(gHANDLE, gBYTE);
+extern gBYTE gGetOpacity(gHANDLE);
+extern gIcon gLoadIcon(void* buffer, int width, int height);
+extern void gDestoryIcon(gIcon);
+extern int gSetIcon(gHANDLE, gIcon);
+extern void gGetLocation(gHANDLE, int*, int*);
+extern void gSetLocation(gHANDLE, int, int);
 
-#define gWS_DEFAULT 0
-#define gWS_NO_BORDER 1
-#define gWS_CHILD 2
+extern void gMoveTop(gHANDLE);
+extern void gMoveBottom(gHANDLE);
+// WM_SETICON
 
-// =========== device context method ==========
-extern void gAbortPath(gDC);
-extern void gBeginPath(gDC);
-extern void gEndPath(gDC);
+#define gWS_DEFAULT 0		// system default style
+#define gWS_CUSTOM 1		// custom unify style
+#define gWS_MODULE 2		// module style
 
-// x, y, radius, start angle, end angle
-extern void gArc(gDC, gPoint, int, float, float);
+// *************************
+// brush object
+// *************************
+extern gBrush gCreateSolidBrush(gBYTE r, gBYTE g, gBYTE b);
+extern void gDestoryBrush(gBrush h);
+extern void gDestoryPen(gPen h);
+extern gPen gCreatePen(int, gBYTE r, gBYTE g, gBYTE b, int width);
 
-// draw path
-// start point
-// start control point
-// end control point
-// end point
-extern void gBezier(gDC, gPoint, gPoint, gPoint, gPoint);
-// rect path
-// start point
-// width
-// height
-extern void gRect(gDC, gPoint, int, int);
-extern void gRectPath(gDC, Rectangle);
-
-extern void RoundRect(gDC, gPoint, int, int);
-extern void RoundRectPath(gDC, Rectangle);
-
-// draw
-extern void Fill(gDC);
-extern void Stroke(gDC);
-
-extern void DrawImage(gDC, gPoint, int, int);
+#define gPEN_SOLID PS_SOLID
+#define gPEN_DASH PS_DASH
+#define gPEN_DOT PS_DOT
+// *************************
+// dc 
+// *************************
+extern void gRePaint(gHANDLE);
+extern void gClearBackground(gHANDLE, gDC);
+extern void gFillRect(gDC dc, int left, int top, int right, int bottom, gBrush brush);
+extern void gDrawImage(gDC dc, int x, int y, void* buffer, int width, int height);
+extern void gStrokeRect(gDC dc, int left, int top, int right, int bottom, gPen pen);
 #endif

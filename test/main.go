@@ -1,24 +1,36 @@
 package main
 
-import "github.com/blinkat/ui"
+import (
+	"fmt"
+	"reflect"
+)
 
-// import (
-// 	"fmt"
-// 	"golang.org/x/image/bmp"
-// 	_ "image/png"
-// 	"os"
-// )
+type Testfn func()
+
+type test struct {
+	Fn Testfn
+	ty reflect.Value
+}
+
+func (t *test) a() {
+	fmt.Println("none")
+}
+
+func (t *test) callA() {
+	met := t.ty.Addr().MethodByName("a")
+	p := make([]reflect.Value, 0)
+	met.Call(p)
+}
 
 func main() {
-	// f, _ := os.Open("./default.png")
-	// img, _ := png.Decode(f)
-	// p := img.(*image.RGBA)
+	obj := &test{
+		Fn: func() {
+			fmt.Println("testing")
+		},
+	}
+	obj.ty = reflect.ValueOf(obj).Elem()
 
-	// for k, v := range p.Pix {
-	// 	if k%12 == 0 {
-	// 		fmt.Println("")
-	// 	}
-	// 	fmt.Print(fmt.Sprintf("0x%x, ", v))
-	// }
-	ui.Test()
+	// p[0] = reflect.ValueOf("test param")
+
+	obj.callA()
 }
