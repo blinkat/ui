@@ -100,11 +100,11 @@ void callPaint(HWND hwnd)
 LRESULT CALLBACK WinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message) {
-	case WM_SHOWWINDOW:
-		gShowEvent(hwnd);
-	case WM_CREATE:
-		gCreatedEvent(hwnd);
-		return 0;
+	// case WM_SHOWWINDOW:
+	// 	gShowEvent(hwnd);
+	// case WM_CREATE:
+	// 	gCreatedEvent(hwnd);
+	// 	return 0;
 	// mouse
 	case WM_MOUSEWHEEL:
 		gMouseMBWheelEvent(hwnd, (int)(LOWORD(lParam)), (int)(HIWORD(lParam)), ((int)wParam) < 0 ? -1 : 1);
@@ -206,7 +206,7 @@ int gInit()
 /**
  * create window func
  */
-gHANDLE gCreateWindow(int width, int height, gCHAR title, int px, int py, int style, gHANDLE parent)
+gHANDLE gCreateWindow(int w, int h, int isTool, gHANDLE parent)
 {
 	gHANDLE ret;
 	HWND hwnd;
@@ -214,33 +214,21 @@ gHANDLE gCreateWindow(int width, int height, gCHAR title, int px, int py, int st
 	UINT st = 0;
 	UINT exst = WS_EX_LAYERED;
 
-	if (style == gWS_MODULE) exst |= WS_EX_TOOLWINDOW;
-
-	// gen st
-	switch (style) {
-	case gWS_DEFAULT: st = WS_OVERLAPPEDWINDOW;
-		break;
-	case gWS_CUSTOM:
-		st = WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_POPUP;
-		break;
-	case gWS_MODULE:
-		st = WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_POPUP;
-		break;
-	default:
-		return NULL;
-	};
+	// if (isTool) exst |= WS_EX_TOOLWINDOW;
+	st = WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_POPUP;
+	if (isTool) exst |= WS_EX_TOOLWINDOW;
 
 	hin = GetModuleHandle(NULL);
 	hwnd = CreateWindowEx(
 	           //WS_EX_CLIENTEDGE | WS_EX_CONTROLPARENT,	// ex style
 	           exst,
 	           WND_NAME,
-	           (LPCTSTR)title,
+	           TEXT(""),
 	           st,
-	           px,
-	           py,
-	           width,
-	           height,
+	           0,
+	           0,
+	           w,
+	           h,
 	           parent,
 	           NULL,
 	           hin,
@@ -249,26 +237,36 @@ gHANDLE gCreateWindow(int width, int height, gCHAR title, int px, int py, int st
 
 	if (hwnd == NULL) return NULL;
 
-	if (style != gWS_DEFAULT)
-	{
-		SetLayeredWindowAttributes(hwnd, RGB(255, 255, 255), 255, LWA_ALPHA | LWA_COLORKEY);
-	}
+	ShowWindow(hwnd, SW_SHOWNORMAL);
+	UpdateWindow(hwnd);
+
+	SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 0, LWA_ALPHA | LWA_COLORKEY);
 
 	return hwnd;
 }
 
-void gShowWindow(gHANDLE h)
+// void gShowWindow(gHANDLE h)
+// {
+// 	MSG msg;
+
+// 	ShowWindow(h, SW_SHOWNORMAL);
+// 	UpdateWindow(h);
+
+// 	while (GetMessage(&msg, NULL, 0, 0))
+// 	{
+// 		TranslateMessage(&msg);
+// 		DispatchMessage(&msg);
+// 	}
+// }
+
+int gGetMessage(gHANDLE hwnd)
 {
 	MSG msg;
-
-	ShowWindow(h, SW_SHOWNORMAL);
-	UpdateWindow(h);
-
-	while (GetMessage(&msg, NULL, 0, 0))
-	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
+	int ret;
+	ret = GetMessage(&msg, NULL, 0, 0);
+	TranslateMessage(&msg);
+	DispatchMessage(&msg);
+	return ret;
 }
 
 void gDestroyWindow(gHANDLE h)
@@ -291,7 +289,7 @@ void gGetSize(gHANDLE h, int* width, int* height)
 
 void gSetOpacity(gHANDLE hwnd, gBYTE opa)
 {
-	SetLayeredWindowAttributes(hwnd, RGB(255, 255, 255), opa, LWA_ALPHA | LWA_COLORKEY);
+	SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), opa, LWA_ALPHA | LWA_COLORKEY);
 }
 
 gBYTE gGetOpacity(gHANDLE hwnd)
@@ -350,6 +348,11 @@ void gMoveTop(gHANDLE hwnd)
 void gMoveBottom(gHANDLE hwnd)
 {
 	SetWindowPos(hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+}
+
+void gSetOpacityColor(gHANDLE hwnd, gBYTE r, gBYTE g, gBYTE b, gBYTE a)
+{
+	SetLayeredWindowAttributes(hwnd, RGB(r, g, b), a, LWA_ALPHA | LWA_COLORKEY);
 }
 
 // *************** brush *******************
@@ -425,17 +428,19 @@ void gClearBackground(gHANDLE hwnd, gDC dc)
 
 void gStrokeRect(gDC dc, int left, int top, int right, int bottom, gPen pen)
 {
-	MoveToEx(dc, left, top, NULL);
-	LineTo(dc, right, top);
-	LineTo(dc, right, bottom);
-	LineTo(dc, left, bottom);
-	LineTo(dc, left, top);
 	SelectObject(dc, pen);
+	// MoveToEx(dc, left, top, NULL);
+	// LineTo(dc, right, top);
+	// LineTo(dc, right, bottom);
+	// LineTo(dc, left, bottom);
+	// LineTo(dc, left, top);
+	Rectangle(dc, left, top, right, bottom);
 	StrokePath(dc);
+	// DeleteObject(dc, pen)
 }
 
 void gRePaint(gHANDLE h)
 {
-	PostMessage(h,WM_PAINT,0,0);
+	PostMessage(h, WM_PAINT, 0, 0);
 }
 #endif

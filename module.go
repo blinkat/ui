@@ -1,77 +1,59 @@
 package ui
 
-import "fmt"
+import ()
 
+// var modules = make(map[Handle]Module)
+
+/**
+ * module interface
+ * all window and module type need fot this
+ */
 type Module interface {
 	Handle() Handle
-	Show() // show and run loop
-	Events() *Caller
+	GetMessage() bool
 	Destory()
 
-	Size() Size
-	Opacity() uint8
-	SetOpacity(uint8)
-
-	AddModule(Module)
-	RemoveModule(Module)
-	IndexModule(Module) int
-
-	Paint(*DeviceContext)
 	Background() Brush
-	SetBackground(br Brush)
+	SetBackground(b Brush)
 
-	Location() Point
+	// -- size --
+	Size() Size
+	SetSize(s Size)
+
+	// pri
+	findModule(h Handle) Module
+
+	// ----------- event ----------
+	OnClose()
+	OnPaint(dc *DeviceContext)
 }
 
-// create module
-// if combine Base. need call Register function for call event
-func CreateBase(width, height, px, py int, title string, parent Module, style int) (*Base, error) {
-	m := &Base{}
-	m.events = NewCaller(m)
-
-	var ph Handle
-	if parent != nil {
-		ph = parent.Handle()
-	} else {
-		ph = nil
-	}
-
-	h, err := ccreateWindow(width, height, title, px, py, style, ph)
-	if err != nil {
-		return nil, err
-	}
-	m.handle = h
-	m.background = DefaultBackground
-
-	m.events.PriEvent.Paint = func(md Module, dc *DeviceContext) bool {
-		size := md.Size()
-		// pos := md.Location()
-		dc.FillRect(NewRect(0, 0, size.Width, size.Height), md.Background())
-		md.Paint(dc)
-
-		switch md.(type) {
-		case *Window:
-			fmt.Println("window")
-		case *Border:
-			fmt.Println("border")
-		}
-
-		return false
-	}
-	// add def event
-
-	return m, nil
-}
-
-// ========== window base ================
-// all win module combine this
+// ************ base module **************
 type Base struct {
-	handle     Handle
-	modules    []Module
-	events     *Caller
+	handle  Handle
+	modules map[Handle]Module
+
 	background Brush
 }
 
+// get window or module handle
+func (b *Base) Handle() Handle {
+	return b.handle
+}
+
+// destory
+func (b *Base) Destory() {
+	cdestroyWindow(b.handle)
+}
+
+// get window or module message
+// if return false this object is quit
+func (b *Base) GetMessage() bool {
+	return cGetMessage(b.handle)
+}
+
+// background
+// begin paint will use background brush clear canvas
 func (b *Base) Background() Brush {
 	return b.background
 }
@@ -80,82 +62,76 @@ func (b *Base) SetBackground(br Brush) {
 	if b.background != nil && b.background != DefaultBackground {
 		b.Destory()
 	}
+
 	b.background = br
 }
 
-func (b *Base) Modules() []Module {
-	return b.modules
+/**
+ * set a color alpha
+ */
+func (ba *Base) SetOpacityColor(r, g, b, a uint8) {
+	cSetOpacityColor(ba.handle, r, g, b, a)
 }
 
-func (b *Base) AddModule(m Module) {
-	b.modules = append(b.modules, m)
+// ---- size ----
+func (b *Base) Size() Size {
+	return NewSize(cGetSize(b.handle))
 }
 
-func (b *Base) RemoveModule(m Module) {
-	i := b.IndexModule(m)
-	if i > 0 {
-		b.modules = append(b.modules[:i], b.modules[i+1:]...)
-	} else if i == 0 {
-		b.modules = b.modules[1:]
-	}
+func (b *Base) SetSize(s Size) {
+	cSetSize(b.handle, s.Width, s.Height)
 }
 
-func (b *Base) IndexModule(m Module) int {
-	for k, v := range b.modules {
-		if m == v {
-			return k
-		}
-	}
-	return -1
-}
-
-func (b *Base) Handle() Handle {
-	return b.handle
-}
-
-func (b *Base) Show() {
-	cshowWindow(b.handle)
-}
-
-func (b *Base) AsynShow() {
-	go b.Show()
-}
-
-func (b *Base) AsynShowByChannel(back chan bool) {
-	go b.Show()
-	back <- true
-}
-
-func (b *Base) Events() *Caller {
-	return b.events
-}
-
-func (b *Base) Destory() {
-	cdestroyWindow(b.handle)
+// set window opacity
+func (b *Base) SetOpacity(a uint8) {
+	cSetOpacity(b.handle, a)
 }
 
 func (b *Base) Opacity() uint8 {
 	return cGetOpacity(b.handle)
 }
 
-func (b *Base) SetOpacity(v uint8) {
-	cSetOpacity(b.handle, v)
+// ------- events --------
+// will close event
+func (b *Base) OnClose() {
+	b.Destory()
 }
 
-func (b *Base) Size() Size {
-	width, height := cGetSize(b.handle)
-	return NewSize(width, height)
+func (b *Base) OnPaint(dc *DeviceContext) {
+	dc.Clear()
 }
 
-func (b *Base) Location() Point {
-	x, y := cGetLocation(b.handle)
-	return NewPoint(x, y)
+// create module base
+func NewModuleBase(width, height int, isTool bool, parent Handle) (*Base, error) {
+	if !isInit {
+		return nil, putError("not init.")
+	}
+
+	h, err := ccreateWindow(width, height, isTool, parent)
+	if err != nil {
+		return nil, err
+	}
+
+	r := &Base{
+		handle:     h,
+		background: DefaultBackground,
+		modules:    make(map[Handle]Module),
+	}
+
+	return r, nil
 }
 
-func (b *Base) RePaint() {
-	cRePaint(b.handle)
-}
-
-func (b *Base) Paint(dc *DeviceContext) {
-
+// private
+func (b *Base) findModule(h Handle) Module {
+	if v, ok := b.modules[h]; ok {
+		return v
+	} else {
+		for _, v := range b.modules {
+			ret := v.findModule(h)
+			if ret != nil {
+				return ret
+			}
+		}
+	}
+	return nil
 }

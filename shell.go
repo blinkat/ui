@@ -8,17 +8,19 @@ package ui
 import "C"
 
 import (
-	"fmt"
-	"syscall"
+	//"syscall"
 	"unsafe"
 )
+
+var isInit = false
 
 // ========= init ========
 func Init() error {
 	i := C.gInit()
 	if i == 0 {
-		return fmt.Errorf("init ui failed")
+		return putError("init ui failed")
 	}
+	isInit = true
 	return nil
 }
 
@@ -155,18 +157,24 @@ type Icon C.gIcon
 type PenHandle C.gPen
 
 // ========= function =======
-func ccreateWindow(width, height int, title string, px, py, style int, parent Handle) (Handle, error) {
-	ct := syscall.StringToUTF16Ptr(title)
+func ccreateWindow(width, height int, isTool bool, parent Handle) (Handle, error) {
+	//ct := syscall.StringToUTF16Ptr(title)
 
-	ret := C.gCreateWindow(C.int(width), C.int(height), (*C.wchar_t)(ct), C.int(px), C.int(py), C.int(style), parent)
+	// ret := C.gCreateWindow(C.int(width), C.int(height), (*C.wchar_t)(ct), C.int(px), C.int(py), C.int(style), parent)
+	is := C.int(0)
+	if isTool {
+		is = 1
+	}
+
+	ret := C.gCreateWindow(C.int(width), C.int(height), is, parent)
 	if ret == nil {
-		return nil, fmt.Errorf("Create window failed.")
+		return nil, putError("Create window failed.")
 	}
 	return Handle(ret), nil
 }
 
-func cshowWindow(h Handle) {
-	C.gShowWindow(h)
+func cGetMessage(h Handle) bool {
+	return int(C.gGetMessage(h)) != 0
 }
 
 func cdestroyWindow(h Handle) {
@@ -191,6 +199,10 @@ func cSetOpacity(h Handle, a uint8) {
 
 func cGetOpacity(h Handle) uint8 {
 	return uint8(C.gGetOpacity(h))
+}
+
+func cSetOpacityColor(h Handle, r, g, b, a uint8) {
+	C.gSetOpacityColor(h, C.gBYTE(r), C.gBYTE(g), C.gBYTE(b), C.gBYTE(a))
 }
 
 func cMoveBottom(h Handle) {
@@ -275,12 +287,19 @@ func gFocusOutEvent(h Handle) {
 
 //export gPaintEvent
 func gPaintEvent(h Handle, dc DC) {
-	callModuleEvent(h, _EVENT_PAINT, newDeviceContext(dc))
+	m := findModule(h)
+	if m != nil {
+		dc := newDeviceContext(dc, m)
+		m.OnPaint(dc)
+	}
 }
 
 //export gCloseEvent
 func gCloseEvent(h Handle) {
-	callModuleEvent(h, _EVENT_CLOSE)
+	m := findModule(h)
+	if m != nil {
+		m.OnClose()
+	}
 }
 
 //export gKeyDownEvent
@@ -344,12 +363,10 @@ func gMouseMBWheelEvent(h Handle, x C.int, y C.int, wheel C.int) {
 
 //export gCreatedEvent
 func gCreatedEvent(h Handle) {
-	callModuleEvent(h, _EVENT_CREATED)
 }
 
 //export gShowEvent
 func gShowEvent(h Handle) {
-	callModuleEvent(h, _EVENT_SHOW)
 }
 
 // ****************** pen ********************************

@@ -13,12 +13,11 @@ func TestBase(t *testing.T) {
 		return
 	}
 
-	img, err := ui.NewImageForFile("./test/test.png")
-	w, err := ui.CreateCustomWindow(1280, 768, 100, 100, "测试窗口", img, nil)
+	win, err := ui.NewWindow(1024, 768, nil)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	w.Show()
+	ui.RunMainLoop(win)
 }

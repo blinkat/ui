@@ -31,7 +31,7 @@ typedef struct _gImage
 {
 	void* buffer;
 	int width, height;
-}gImage, *pGImage;
+} gImage, *pGImage;
 
 
 // ======== include API ==========
@@ -209,7 +209,9 @@ extern void gMouseMBDoubleEvent(gHANDLE, int, int);
 // wheel = 1 up
 extern void gMouseMBWheelEvent(gHANDLE, int, int, int);
 extern void gCreatedEvent(gHANDLE);
-extern void gShowEvent(gHANDLE);
+extern int gGetMessage(gHANDLE);
+extern void gSetOpacityColor(gHANDLE, gBYTE, gBYTE, gBYTE, gBYTE);
+// extern void gShowEvent(gHANDLE);
 
 //===============================
 // extern functions
@@ -224,8 +226,7 @@ extern void gShowEvent(gHANDLE);
  * @param parent
  * @return
  */
-extern gHANDLE gCreateWindow(int, int, gCHAR, int, int, int, gHANDLE);
-extern void gShowWindow(gHANDLE h);
+extern gHANDLE gCreateWindow(int w, int h, int isTool, gHANDLE parent);
 extern void gSetWindowIcon(gIcon);
 extern void gDestroyWindow(gHANDLE);
 extern void gGetSize(gHANDLE, int*, int*);
@@ -258,7 +259,7 @@ extern gPen gCreatePen(int, gBYTE r, gBYTE g, gBYTE b, int width);
 #define gPEN_DASH PS_DASH
 #define gPEN_DOT PS_DOT
 // *************************
-// dc 
+// dc
 // *************************
 extern void gRePaint(gHANDLE);
 extern void gClearBackground(gHANDLE, gDC);
