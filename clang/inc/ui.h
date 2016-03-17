@@ -18,21 +18,23 @@ typedef unsigned char gBYTE;
 extern void newGUID(gCHAR str);
 extern int gInit();
 
-struct gPoint {
-	int x, y;
-};
-
-struct gRectangle
+typedef struct _gColor
 {
-	int x, y, width, height;
-};
+	gBYTE R, G, B;
+} gColor;
 
-typedef struct _gImage
+typedef struct _gFillStyle
 {
-	void* buffer;
-	int width, height;
-} gImage, *pGImage;
+	gColor* Colors;
+	int* Positions;
 
+	int Length;
+} gFillStyle;
+
+extern gColor* gCreateColor(gBYTE r, gBYTE g, gBYTE b);
+extern void gDestoryFillStyle(gFillStyle *s);
+extern gFillStyle* gCreateLinear(gColor* cols, int* pos, int len);
+extern gFillStyle* gCreateSolid(gColor* c);
 
 // ======== include API ==========
 // == win
@@ -44,8 +46,7 @@ typedef struct _gImage
 typedef HWND gHANDLE;
 typedef HDC gDC;			// paint device context
 typedef HICON gIcon;
-typedef HBRUSH gBrush;
-typedef HPEN gPen;
+typedef HFONT gFont;
 
 // define key code
 #define gKEY_BACK 		VK_BACK
@@ -165,10 +166,13 @@ typedef HPEN gPen;
 #define gKEY_NUM_MINUS			109
 #define gKEY_NUM_ADD			107
 #define gKEY_NUM_DOT			110
-
-#define gFLAGS_DEFAULT WS_OVERLAPPEDWINDOW
 #endif
 //== end win
+
+// ======== defined ============
+#define gWS_DEFAULT 	1
+#define gWS_CHILD 		2
+#define gWS_TOOL		4
 
 // ======== event callback ========
 // size int width, int height
@@ -209,9 +213,8 @@ extern void gMouseMBDoubleEvent(gHANDLE, int, int);
 // wheel = 1 up
 extern void gMouseMBWheelEvent(gHANDLE, int, int, int);
 extern void gCreatedEvent(gHANDLE);
-extern int gGetMessage(gHANDLE);
-extern void gSetOpacityColor(gHANDLE, gBYTE, gBYTE, gBYTE, gBYTE);
-// extern void gShowEvent(gHANDLE);
+extern void gShowEvent(gHANDLE);
+extern void gMouseMove(gHANDLE, int, int);
 
 //===============================
 // extern functions
@@ -226,7 +229,12 @@ extern void gSetOpacityColor(gHANDLE, gBYTE, gBYTE, gBYTE, gBYTE);
  * @param parent
  * @return
  */
-extern gHANDLE gCreateWindow(int w, int h, int isTool, gHANDLE parent);
+extern gHANDLE gCreateWindow(int w, int h, int px, int py, int style, gHANDLE parent);
+extern void gShowWindow(gHANDLE hwnd);
+extern int gGetMessage(gHANDLE);
+
+extern void gRepaint(gHANDLE); 
+
 extern void gSetWindowIcon(gIcon);
 extern void gDestroyWindow(gHANDLE);
 extern void gGetSize(gHANDLE, int*, int*);
@@ -243,27 +251,35 @@ extern void gMoveTop(gHANDLE);
 extern void gMoveBottom(gHANDLE);
 // WM_SETICON
 
-#define gWS_DEFAULT 0		// system default style
-#define gWS_CUSTOM 1		// custom unify style
-#define gWS_MODULE 2		// module style
-
-// *************************
-// brush object
-// *************************
-extern gBrush gCreateSolidBrush(gBYTE r, gBYTE g, gBYTE b);
-extern void gDestoryBrush(gBrush h);
-extern void gDestoryPen(gPen h);
-extern gPen gCreatePen(int, gBYTE r, gBYTE g, gBYTE b, int width);
-
-#define gPEN_SOLID PS_SOLID
-#define gPEN_DASH PS_DASH
-#define gPEN_DOT PS_DOT
 // *************************
 // dc
 // *************************
-extern void gRePaint(gHANDLE);
-extern void gClearBackground(gHANDLE, gDC);
-extern void gFillRect(gDC dc, int left, int top, int right, int bottom, gBrush brush);
-extern void gDrawImage(gDC dc, int x, int y, void* buffer, int width, int height);
-extern void gStrokeRect(gDC dc, int left, int top, int right, int bottom, gPen pen);
+extern int gFillRect(gDC dc, int px, int py, int width, int height, gFillStyle* style, gColor*, int);
+extern void gFillRoundRect(gDC dc, int px, int py, int width, int height, int radius, gFillStyle* style, gColor*, int);
+
+extern void gBeginPath(gDC dc, int px, int py);
+extern void gEndPath(gDC);
+extern void gLineTo(gDC dc, int px, int py);
+extern void gLineMoveTo(gDC dc, int px, int py);
+extern void gStroke(gDC dc, gColor* col, int width);
+
+extern void gDrawText(gDC dc, int px, int py, int size, gCHAR text, gColor* color, gCHAR face, int style, int);
+
+extern void gGetPix(gDC dc, int px, int py, gBYTE* r, gBYTE* g, gBYTE*b);
+extern void gSetPix(gDC dc, int px, int py, gBYTE r, gBYTE g, gBYTE b);
+// *************************
+// global methods
+// *************************
+extern void gGetCursorPos(int*, int*);
+extern int gAddFontResource(gCHAR path);
+extern int gRemoveFontResource(gCHAR path);
+// *************************
+// font
+// *************************
+#define gFONT_BOLD				1
+#define gFONT_ITALIC			2
+#define gFONT_UNDERLINE			4
+#define gFONT_STRIKEOUT			8
+
+//extern gFont gCreateFont(gCHAR, int);
 #endif
