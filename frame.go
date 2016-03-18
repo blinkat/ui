@@ -25,6 +25,7 @@ type Frame interface {
 	AddModule(m Frame)
 	ReomoveModule(m Frame)
 	SetModules(ms map[Handle]Frame)
+	FindModule(h Handle) Frame
 
 	Rect() *Rectangle
 	SetRect(r *Rectangle)
@@ -70,7 +71,7 @@ func findFrameForMain(h Handle) Frame {
 	if MainFrame.Handle() == h {
 		return MainFrame
 	} else {
-		return findFrame(MainFrame, h)
+		return MainFrame.FindModule(h)
 	}
 }
 

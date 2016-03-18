@@ -51,6 +51,21 @@ func (m *Module) Show() {
 	C.gShowWindow(m.handle)
 }
 
+func (m *Module) FindModule(h Handle) Frame {
+	cls := m.Modules()
+	if v, ok := cls[h]; ok {
+		return v
+	} else if len(cls) > 0 {
+		for _, v := range cls {
+			r := v.FindModule(h)
+			if r != nil {
+				return r
+			}
+		}
+	}
+	return nil
+}
+
 // ---
 func (m *Module) Size() *Size {
 	width := C.int(0)
