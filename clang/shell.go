@@ -155,12 +155,12 @@ type DC C.gDC
 type Char C.gCHAR
 type cFont C.gFont
 
-func CursorPos() (int, int) {
+func CursorPos() *Point {
 	x := C.int(0)
 	y := C.int(0)
 
 	C.gGetCursorPos(&x, &y)
-	return int(x), int(y)
+	return NewPoint(int(x), int(y))
 }
 
 // add font resource

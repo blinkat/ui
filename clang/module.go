@@ -5,6 +5,7 @@ import "C"
 
 import (
 	"fmt"
+	"unsafe"
 )
 
 // ========== Module ==========
@@ -49,16 +50,16 @@ func (m *Module) Show() {
 }
 
 // ---
-func (m *Module) Size() (int, int) {
+func (m *Module) Size() *Size {
 	width := C.int(0)
 	height := C.int(0)
 
 	C.gGetSize(m.handle, &width, &height)
-	return int(width), int(height)
+	return NewSize(int(width), int(height))
 }
 
-func (m *Module) SetSize(w, h int) {
-	C.gSetSize(m.handle, C.int(w), C.int(h))
+func (m *Module) SetSize(p *Size) {
+	C.gSetSize(m.handle, C.int(p.Width), C.int(p.Height))
 }
 
 func (m *Module) SetOpacity(a uint8) {
@@ -77,30 +78,34 @@ func (m *Module) MoveTop() {
 	C.gMoveTop(m.handle)
 }
 
-func (m *Module) Location() (int, int) {
+func (m *Module) Location() *Point {
 	var x, y C.int
 	C.gGetLocation(m.handle, &x, &y)
-	return int(x), int(y)
+	return NewPoint(int(x), int(y))
 }
 
-func (m *Module) SetLocation(x, y int) {
-	C.gSetLocation(m.handle, C.int(x), C.int(y))
+func (m *Module) SetLocation(p *Point) {
+	C.gSetLocation(m.handle, C.int(p.X), C.int(p.Y))
 }
 
-func (m *Module) PointIn(x, y int) bool {
-	px, py := m.Location()
-	w, h := m.Size()
+func (m *Module) Rect() *Rectangle {
+	var l, t, r, b C.int
+	C.gGetRect(m.handle, &l, &t, &r, &b)
+	return Rect(int(l), int(t), int(r), int(b))
+}
 
-	return (x >= px && y >= py) && (x < px+w && y < py+h)
-	// b := (x >= px && y >= py) && (x < px+w && y < py+h)
-	// if !b {
-	// 	fmt.Println(x, y, px, py, px+w, py+h)
-	// }
-	// return b
+func (m *Module) SetRect(r *Rectangle) {
+	C.gSetRect(m.handle, C.int(r.X), C.int(r.Y), C.int(r.Width), C.int(r.Height))
 }
 
 func (m *Module) Repaint() {
 	C.gRepaint(m.handle)
+}
+
+func (m *Module) SetIcon(img *Image) {
+	size := img.Size()
+	pixs := img.src.Pix
+	C.gSetIcon(m.handle, unsafe.Pointer(&pixs[0]), C.int(size.Width), C.int(size.Height))
 }
 
 // =============== [ events ] =====================
@@ -109,11 +114,11 @@ func (m *Module) OnClose() bool {
 }
 
 func (m *Module) OnPaint(c *Canvas) {
-	w, h := m.Size()
-	c.FillRect(0, 0, w, h)
+	s := m.Size()
+	c.FillRect(NewRect(0, 0, s.Width, s.Height))
 }
 
-func (m *Module) OnSize(w, h int) {
+func (m *Module) OnSize(size *Size) {
 
 }
 
@@ -121,7 +126,7 @@ func (m *Module) OnDestory() {
 
 }
 
-func (m *Module) OnMove(x, y int) {
+func (m *Module) OnMove(p *Point) {
 }
 
 func (m *Module) OnFocus() {
@@ -137,19 +142,19 @@ func (m *Module) OnKeyUp(k Key) {
 
 }
 
-func (m *Module) OnMouseDown(x, y int, btn MouseKey) {
+func (m *Module) OnMouseDown(p *Point, btn MouseKey) {
 
 }
 
-func (m *Module) OnMouseUp(x, y int, btn MouseKey) {
+func (m *Module) OnMouseUp(p *Point, btn MouseKey) {
 
 }
 
-func (m *Module) OnMouseDouble(x, y int, btn MouseKey) {
+func (m *Module) OnMouseDouble(p *Point, btn MouseKey) {
 
 }
 
-func (m *Module) OnMouseWheel(x, y, wheel int) {
+func (m *Module) OnMouseWheel(p *Point, wheel int) {
 
 }
 
@@ -159,7 +164,7 @@ func (m *Module) OnCreated() {
 func (m *Module) OnShow() {
 }
 
-func (m *Module) OnMouseMove(x, y int) {
+func (m *Module) OnMouseMove(p *Point) {
 }
 
 func (m *Module) OnMouseLeave() {
@@ -178,13 +183,13 @@ func (m *Module) setMouseFirstEnter(b bool) {
 }
 
 // ctor
-func NewModule(width, height, px, py, style int, parent Frame) (*Module, error) {
+func NewModule(size *Size, p *Point, style int, parent Frame) (*Module, error) {
 	var par Handle
 	if parent != nil {
 		par = parent.Handle()
 	}
 
-	h := C.gCreateWindow(C.int(width), C.int(height), C.int(px), C.int(py), C.int(style), par)
+	h := C.gCreateWindow(C.int(size.Width), C.int(size.Height), C.int(p.X), C.int(p.Y), C.int(style), par)
 	if h == nil {
 		return nil, fmt.Errorf("Create window failed.")
 	}

@@ -241,27 +241,27 @@ extern void gGetSize(gHANDLE, int*, int*);
 extern void gSetSize(gHANDLE, int, int);
 extern void gSetOpacity(gHANDLE, gBYTE);
 extern gBYTE gGetOpacity(gHANDLE);
-extern gIcon gLoadIcon(void* buffer, int width, int height);
+//extern gIcon gLoadIcon(void* buffer, int width, int height);
 extern void gDestoryIcon(gIcon);
-extern int gSetIcon(gHANDLE, gIcon);
+extern void gSetIcon(gHANDLE, void* buffer, int width, int height);
 extern void gGetLocation(gHANDLE, int*, int*);
 extern void gSetLocation(gHANDLE, int, int);
 
 extern void gMoveTop(gHANDLE);
 extern void gMoveBottom(gHANDLE);
+extern void gGetRect(gHANDLE, int*, int*, int*, int*);
+extern void gSetRect(gHANDLE, int, int, int, int);
 // WM_SETICON
 
 // *************************
 // dc
 // *************************
-extern int gFillRect(gDC dc, int px, int py, int width, int height, gFillStyle* style, gColor*, int);
-extern void gFillRoundRect(gDC dc, int px, int py, int width, int height, int radius, gFillStyle* style, gColor*, int);
-
 extern void gBeginPath(gDC dc, int px, int py);
 extern void gEndPath(gDC);
 extern void gLineTo(gDC dc, int px, int py);
 extern void gLineMoveTo(gDC dc, int px, int py);
 extern void gStroke(gDC dc, gColor* col, int width);
+extern void gFill(gDC, gFillStyle*);
 
 extern void gDrawText(gDC dc, int px, int py, int size, gCHAR text, gColor* color, gCHAR face, int style, int);
 

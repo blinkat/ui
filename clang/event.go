@@ -18,7 +18,7 @@ const (
 //export gSizeEvent
 func gSizeEvent(handle Handle, w, h C.int) {
 	if r := findFrameForMain(handle); r != nil {
-		r.OnSize(int(w), int(h))
+		r.OnSize(NewSize(int(w), int(h)))
 	}
 }
 
@@ -32,7 +32,7 @@ func gDestoryEvent(h Handle) {
 //export gMoveEvent
 func gMoveEvent(h Handle, x, y C.int) {
 	if r := findFrameForMain(h); r != nil {
-		r.OnMove(int(x), int(y))
+		r.OnMove(NewPoint(int(x), int(y)))
 	}
 }
 
@@ -84,70 +84,70 @@ func gKeyUpEvent(h Handle, k C.int) {
 //export gMouseLBDownEvent
 func gMouseLBDownEvent(h Handle, x C.int, y C.int) {
 	if r := findFrameForMain(h); r != nil {
-		r.OnMouseDown(int(x), int(y), MOUSE_LEFT)
+		r.OnMouseDown(NewPoint(int(x), int(y)), MOUSE_LEFT)
 	}
 }
 
 //export gMouseLBUpEvent
 func gMouseLBUpEvent(h Handle, x C.int, y C.int) {
 	if r := findFrameForMain(h); r != nil {
-		r.OnMouseUp(int(x), int(y), MOUSE_LEFT)
+		r.OnMouseUp(NewPoint(int(x), int(y)), MOUSE_LEFT)
 	}
 }
 
 //export gMouseLBDoubleEvent
 func gMouseLBDoubleEvent(h Handle, x C.int, y C.int) {
 	if r := findFrameForMain(h); r != nil {
-		r.OnMouseDouble(int(x), int(y), MOUSE_LEFT)
+		r.OnMouseDouble(NewPoint(int(x), int(y)), MOUSE_LEFT)
 	}
 }
 
 //export gMouseRBUpEvent
 func gMouseRBUpEvent(h Handle, x C.int, y C.int) {
 	if r := findFrameForMain(h); r != nil {
-		r.OnMouseUp(int(x), int(y), MOUSE_RIGHT)
+		r.OnMouseUp(NewPoint(int(x), int(y)), MOUSE_RIGHT)
 	}
 }
 
 //export gMouseRBDownEvent
 func gMouseRBDownEvent(h Handle, x C.int, y C.int) {
 	if r := findFrameForMain(h); r != nil {
-		r.OnMouseDown(int(x), int(y), MOUSE_RIGHT)
+		r.OnMouseDown(NewPoint(int(x), int(y)), MOUSE_RIGHT)
 	}
 }
 
 //export gMouseRBDoubleEvent
 func gMouseRBDoubleEvent(h Handle, x C.int, y C.int) {
 	if r := findFrameForMain(h); r != nil {
-		r.OnMouseDouble(int(x), int(y), MOUSE_RIGHT)
+		r.OnMouseDouble(NewPoint(int(x), int(y)), MOUSE_RIGHT)
 	}
 }
 
 //export gMouseMBUpEvent
 func gMouseMBUpEvent(h Handle, x C.int, y C.int) {
 	if r := findFrameForMain(h); r != nil {
-		r.OnMouseUp(int(x), int(y), MOUSE_MIDDLE)
+		r.OnMouseUp(NewPoint(int(x), int(y)), MOUSE_MIDDLE)
 	}
 }
 
 //export gMouseMBDownEvent
 func gMouseMBDownEvent(h Handle, x C.int, y C.int) {
 	if r := findFrameForMain(h); r != nil {
-		r.OnMouseDown(int(x), int(y), MOUSE_MIDDLE)
+		r.OnMouseDown(NewPoint(int(x), int(y)), MOUSE_MIDDLE)
 	}
 }
 
 //export gMouseMBDoubleEvent
 func gMouseMBDoubleEvent(h Handle, x C.int, y C.int) {
 	if r := findFrameForMain(h); r != nil {
-		r.OnMouseDouble(int(x), int(y), MOUSE_MIDDLE)
+		r.OnMouseDouble(NewPoint(int(x), int(y)), MOUSE_MIDDLE)
 	}
 }
 
 //export gMouseMBWheelEvent
 func gMouseMBWheelEvent(h Handle, x C.int, y C.int, wheel C.int) {
 	if r := findFrameForMain(h); r != nil {
-		r.OnMouseWheel(int(x), int(y), int(wheel))
+		r.OnMouseWheel(NewPoint(int(x), int(y)), int(wheel))
 	}
 }
 
@@ -175,7 +175,7 @@ func gMouseMove(h Handle, x, y C.int) {
 			go hoverTimer(r)
 		}
 
-		r.OnMouseMove(int(x), int(y))
+		r.OnMouseMove(NewPoint(int(x), int(y)))
 	}
 }
 
@@ -191,8 +191,8 @@ func hoverTimer(r Frame) {
 			r.setMouseFirstEnter(false)
 			return
 		default:
-			px, py := CursorPos()
-			if !r.PointIn(px, py) {
+			p := CursorPos()
+			if !r.Rect().PointIn(p) {
 				r.OnMouseLeave()
 				sym <- false
 			} else {

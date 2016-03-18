@@ -9,8 +9,8 @@ type Frame interface {
 	GetMessage() bool
 	Show() // show and updata window
 
-	Size() (int, int)
-	SetSize(w, h int)
+	Size() *Size
+	SetSize(s *Size)
 
 	Opacity() uint8
 	SetOpacity(a uint8)
@@ -18,24 +18,26 @@ type Frame interface {
 	MoveBottom() // move win to layer bottom
 	MoveTop()    // move win to layer up
 
-	Location() (int, int)
-	SetLocation(x, y int)
+	Location() *Point
+	SetLocation(p *Point)
 	// modules
 	Modules() map[Handle]Frame
 	AddModule(m Frame)
 	ReomoveModule(m Frame)
 	SetModules(ms map[Handle]Frame)
 
-	PointIn(x, y int) bool // point in window or not
+	Rect() *Rectangle
+	SetRect(r *Rectangle)
 
+	SetIcon(ico *Image)
 	Repaint()
 
 	// ---- event ----
 	OnClose() bool     // return true send close to window
 	OnPaint(c *Canvas) // begin paint event
-	OnSize(w, h int)
+	OnSize(s *Size)
 	OnDestory()
-	OnMove(x, y int)
+	OnMove(p *Point)
 
 	OnFocus()
 	OnFocusOut()
@@ -43,15 +45,15 @@ type Frame interface {
 	OnKeyDown(k Key)
 	OnKeyUp(k Key)
 
-	OnMouseDown(x, y int, btn MouseKey)
-	OnMouseUp(x, y int, btn MouseKey)
-	OnMouseDouble(x, y int, btn MouseKey)
-	OnMouseWheel(x, y, wheel int)
+	OnMouseDown(p *Point, btn MouseKey)
+	OnMouseUp(p *Point, btn MouseKey)
+	OnMouseDouble(p *Point, btn MouseKey)
+	OnMouseWheel(p *Point, wheel int)
 
 	OnCreated()
 	OnShow()
 
-	OnMouseMove(x, y int)
+	OnMouseMove(p *Point)
 	OnMouseLeave()
 	OnMouseHover()
 

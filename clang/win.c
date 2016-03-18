@@ -306,20 +306,25 @@ gBYTE gGetOpacity(gHANDLE hwnd)
 	return op;
 }
 
-gIcon gLoadIcon(void* buffer, int width, int height)
-{
-	return converToIco(buffer, width, height);
-}
+// gIcon gLoadIcon(void* buffer, int width, int height)
+// {
+// 	return converToIco(buffer, width, height);
+// }
 
 void gDestoryIcon(gIcon ico)
 {
 	DeleteObject(ico);
 }
 
-int gSetIcon(gHANDLE hwnd, gIcon ico)
+void gSetIcon(gHANDLE hwnd, void* buffer, int width, int height)
 {
+	HICON ico;
+	ico = converToIco(buffer, width, height);
+
 	SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)ico);
 	SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)ico);
+
+	DeleteObject(ico);
 }
 
 void gGetLocation(gHANDLE hwnd, int* x, int* y)
@@ -363,54 +368,63 @@ void gRepaint(gHANDLE hwnd)
 	RedrawWindow(hwnd, &r, NULL, RDW_ERASE | RDW_INVALIDATE);
 }
 
-// *************** drawer *******************
-void init_dc(gDC dc, gFillStyle *style, gColor *cpen, int pwidth, HBRUSH *brush, HPEN *pen)
+void gGetRect(gHANDLE hwnd, int* left, int* top, int* right, int* bottom)
 {
-	gColor* col;
+	RECT r;
+	if (GetWindowRect(hwnd, &r))
+	{
+		*left = (int)r.left;
+		*top = (int)r.top;
+		*right = (int)r.right;
+		*bottom = (int)r.bottom;
+	}
+}
 
-	LPTSTR tmp = malloc(sizeof(TCHAR) * 1024 );
-	// HBRUSH brush;
-	// HPEN pen;
+void gSetRect(gHANDLE hwnd, int x, int y, int width, int height)
+{
+	MoveWindow(hwnd, x, y, width, height, TRUE);
+}
 
-	*pen = CreatePen(PS_SOLID, pwidth, RGB(cpen->R, cpen->G, cpen->B));
+// *************** drawer *******************
+// void init_dc(gDC dc, gFillStyle *style, gColor *cpen, int pwidth, HBRUSH *brush, HPEN *pen)
+// {
+// 	gColor* col;
+
+// 	LPTSTR tmp = malloc(sizeof(TCHAR) * 1024 );
+// 	// HBRUSH brush;
+// 	// HPEN pen;
+
+// 	*pen = CreatePen(PS_SOLID, pwidth, RGB(cpen->R, cpen->G, cpen->B));
+// 	if (style->Length == 0)
+// 	{
+// 		col = style->Colors;
+// 		*brush = CreateSolidBrush(RGB(col->R, col->G, col->B));
+// 	}
+
+// 	SelectObject(dc, *brush);
+// 	SelectObject(dc, *pen);
+// }
+
+HBRUSH create_brush(gFillStyle *style)
+{
+	gColor *col;
+	HBRUSH brush;
+
 	if (style->Length == 0)
 	{
 		col = style->Colors;
-		*brush = CreateSolidBrush(RGB(col->R, col->G, col->B));
+		brush = CreateSolidBrush(RGB(col->R, col->G, col->B));
 	}
 
-	SelectObject(dc, *brush);
-	SelectObject(dc, *pen);
+	return brush;
 }
 
-int gFillRect(gDC dc, int px, int py, int width, int height, gFillStyle* style, gColor* cpen, int penwidth)
+void gFill(gDC dc, gFillStyle *c)
 {
-	RECT r;
-	HBRUSH brush;
-	HPEN pen;
-
-	r.left = px;
-	r.right = px + width;
-	r.top = py;
-	r.bottom = py + height;
-
-	init_dc(dc, style, cpen, penwidth, &brush, &pen);
-
-	FillRect(dc, &r, brush);
+	HBRUSH brush = create_brush(c);
+	SelectObject(dc, brush);
+	FillPath(dc);
 	DeleteObject(brush);
-	DeleteObject(pen);
-	return 0;
-}
-
-void gFillRoundRect(gDC dc, int px, int py, int width, int height, int radius, gFillStyle* style, gColor* cpen, int penwidth)
-{
-	HBRUSH brush;
-	HPEN pen;
-
-	init_dc(dc, style, cpen, penwidth, &brush, &pen);
-	RoundRect(dc, px, py, px + width, py + height, radius, radius);
-	DeleteObject(brush);
-	DeleteObject(pen);
 }
 
 void gBeginPath(gDC dc, int px, int py)
