@@ -251,6 +251,9 @@ extern void gMoveTop(gHANDLE);
 extern void gMoveBottom(gHANDLE);
 extern void gGetRect(gHANDLE, int*, int*, int*, int*);
 extern void gSetRect(gHANDLE, int, int, int, int);
+
+// extern void gTitle(gHANDLE);
+extern void gSetTitle(gHANDLE, gCHAR);
 // WM_SETICON
 
 // *************************

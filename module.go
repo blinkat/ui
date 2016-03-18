@@ -5,6 +5,7 @@ import "C"
 
 import (
 	"fmt"
+	"syscall"
 	"unsafe"
 )
 
@@ -13,6 +14,7 @@ type Module struct {
 	modules    map[Handle]Frame
 	handle     Handle
 	mouseFirst bool
+	text       string
 }
 
 func (m *Module) Handle() Handle {
@@ -106,6 +108,16 @@ func (m *Module) SetIcon(img *Image) {
 	size := img.Size()
 	pixs := img.src.Pix
 	C.gSetIcon(m.handle, unsafe.Pointer(&pixs[0]), C.int(size.Width), C.int(size.Height))
+}
+
+func (m *Module) Text() string {
+	return m.text
+}
+
+func (m *Module) SetText(t string) {
+	m.text = t
+	p := syscall.StringToUTF16(t)
+	C.gSetTitle(m.handle, (*C.wchar_t)(&p[0]))
 }
 
 // =============== [ events ] =====================
