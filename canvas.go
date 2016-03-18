@@ -1,4 +1,4 @@
-package clang
+package ui
 
 //#include "inc/ui.h"
 import "C"
